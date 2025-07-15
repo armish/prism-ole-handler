@@ -1,5 +1,7 @@
 # PRISM OLE Handler
 
+[![CI](https://github.com/armish/prism-ole-handler/actions/workflows/ci.yml/badge.svg)](https://github.com/armish/prism-ole-handler/actions/workflows/ci.yml)
+
 Extract and insert GraphPad PRISM objects from Microsoft Office documents (PowerPoint, Word, Excel) on macOS.
 
 ## Background
