@@ -1,7 +1,7 @@
 """
 PRISM OLE Handler
 
-A Python package for extracting and inserting GraphPad PRISM objects 
+A Python package for extracting and inserting GraphPad PRISM objects
 from Microsoft Office documents (PowerPoint, Word, Excel) on macOS.
 """
 
@@ -12,4 +12,4 @@ __email__ = "arman@aksoy.org"
 from .core.extractor import PrismExtractor
 from .core.inserter import PrismInserter
 
-__all__ = ['PrismExtractor', 'PrismInserter']
+__all__ = ["PrismExtractor", "PrismInserter"]

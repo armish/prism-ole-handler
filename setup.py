@@ -40,9 +40,12 @@ setup(
     extras_require={
         "dev": [
             "pytest>=6.0",
-            "black",
-            "flake8",
-            "mypy",
+            "pytest-cov>=2.0",
+            "black>=22.0",
+            "flake8>=4.0",
+            "mypy>=0.950",
+            "build>=0.8",
+            "twine>=4.0",
         ],
     },
     entry_points={

@@ -1,6 +1,7 @@
 """
 Command-line interface for PRISM insertion.
 """
+
 import argparse
 import sys
 import os
@@ -13,7 +14,7 @@ from ..core.inserter import PrismInserter
 def main():
     """Main entry point for insertion CLI."""
     parser = argparse.ArgumentParser(
-        description='Insert PRISM objects back into PowerPoint files',
+        description="Insert PRISM objects back into PowerPoint files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -39,38 +40,48 @@ Mapping file format (updates.json):
     {"slide": 3, "prism": "slide3_updated.pzfx"}
   ]
 }
-        """
+        """,
     )
-    
-    parser.add_argument('pptx_file', help='Path to the PowerPoint file')
-    parser.add_argument('--slide', '-s', type=int, action='append', 
-                        help='Slide number to update')
-    parser.add_argument('--prism', '-p', action='append',
-                        help='PRISM file to insert (.pzfx format)')
-    parser.add_argument('--mapping', '-m', 
-                        help='JSON file with slide-to-prism mappings')
-    parser.add_argument('--output', '-o',
-                        help='Output PPTX file (default: overwrite original)')
-    parser.add_argument('--create-new', action='store_true',
-                        help='Create new slides if they don\'t exist')
-    parser.add_argument('--force-insert', action='store_true',
-                        help='Insert into slides even if they already have embeddings')
-    
+
+    parser.add_argument("pptx_file", help="Path to the PowerPoint file")
+    parser.add_argument(
+        "--slide", "-s", type=int, action="append", help="Slide number to update"
+    )
+    parser.add_argument(
+        "--prism", "-p", action="append", help="PRISM file to insert (.pzfx format)"
+    )
+    parser.add_argument(
+        "--mapping", "-m", help="JSON file with slide-to-prism mappings"
+    )
+    parser.add_argument(
+        "--output", "-o", help="Output PPTX file (default: overwrite original)"
+    )
+    parser.add_argument(
+        "--create-new",
+        action="store_true",
+        help="Create new slides if they don't exist",
+    )
+    parser.add_argument(
+        "--force-insert",
+        action="store_true",
+        help="Insert into slides even if they already have embeddings",
+    )
+
     args = parser.parse_args()
-    
+
     if not os.path.exists(args.pptx_file):
         print(f"Error: File not found: {args.pptx_file}")
         sys.exit(1)
-    
+
     # Build update list
     updates = []
-    
+
     if args.mapping:
         # Load from mapping file
-        with open(args.mapping, 'r') as f:
+        with open(args.mapping, "r") as f:
             mapping_data = json.load(f)
-            for update in mapping_data.get('updates', []):
-                updates.append((update['slide'], update['prism']))
+            for update in mapping_data.get("updates", []):
+                updates.append((update["slide"], update["prism"]))
     elif args.slide and args.prism:
         # Use command line arguments
         if len(args.slide) != len(args.prism):
@@ -80,7 +91,7 @@ Mapping file format (updates.json):
     else:
         print("Error: Specify either --slide/--prism pairs or --mapping file")
         sys.exit(1)
-    
+
     # Perform insertion
     inserter = PrismInserter(args.pptx_file)
     if args.output and args.output != args.pptx_file:
