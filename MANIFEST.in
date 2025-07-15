@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+recursive-include prism_powerpoint/test *.pptx *.prism *.pzfx
+global-exclude *.pyc
+global-exclude __pycache__

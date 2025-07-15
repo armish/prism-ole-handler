@@ -1,15 +1,33 @@
-# PRISM Object Extractor for PowerPoint
+# PRISM OLE Handler
 
-Extract GraphPad PRISM objects from PowerPoint presentations on macOS.
+Extract and insert GraphPad PRISM objects from Microsoft Office documents (PowerPoint, Word, Excel) on macOS.
 
 ## Background
 
-PowerPoint for Mac doesn't support direct editing of embedded PRISM objects (OLE), unlike Windows. This tool extracts embedded PRISM objects from .pptx files so they can be edited in PRISM and re-embedded.
+Microsoft Office for Mac doesn't support direct editing of embedded PRISM objects (OLE), unlike Windows. This package provides tools to extract embedded PRISM objects from Office documents so they can be edited in PRISM and re-embedded.
+
+Currently supports:
+- **PowerPoint** (.pptx) - Full support
+- **Word** (.docx) - Planned
+- **Excel** (.xlsx) - Planned
 
 ## Installation
 
+### From PyPI (recommended)
 ```bash
-pip install -r requirements.txt
+pip install prism-ole-handler
+```
+
+### From source
+```bash
+git clone https://github.com/armish/prism-ole-handler.git
+cd prism-ole-handler
+pip install -e .
+```
+
+### Development installation
+```bash
+pip install -e ".[dev]"
 ```
 
 ## Usage
@@ -17,16 +35,16 @@ pip install -r requirements.txt
 ### Extraction:
 ```bash
 # Extract from all slides
-python extract_prism.py presentation.pptx -o output_folder
+prism-extract presentation.pptx -o output_folder
 
 # Extract from specific slide
-python extract_prism.py presentation.pptx --slide 2 -o output_folder
+prism-extract presentation.pptx --slide 2 -o output_folder
 
 # Extract from multiple slides
-python extract_prism.py presentation.pptx --slide 2 --slide 3 --slide 5 -o output_folder
+prism-extract presentation.pptx --slide 2 --slide 3 --slide 5 -o output_folder
 
 # Extract from multiple slides (comma-separated)
-python extract_prism.py presentation.pptx --slides 2,3,5 -o output_folder
+prism-extract presentation.pptx --slides 2,3,5 -o output_folder
 ```
 
 This provides:
@@ -55,19 +73,19 @@ To re-insert updated PRISM objects back into PowerPoint:
 
 ```bash
 # Update an existing slide (replace existing embedding)
-python insert_prism.py presentation.pptx --slide 2 --prism updated_graph.pzfx
+prism-insert presentation.pptx --slide 2 --prism updated_graph.pzfx
 
 # Insert into empty slide
-python insert_prism.py presentation.pptx --slide 3 --prism new_graph.pzfx
+prism-insert presentation.pptx --slide 3 --prism new_graph.pzfx
 
 # Create new slide with PRISM object
-python insert_prism.py presentation.pptx --slide 10 --prism graph.pzfx --create-new
+prism-insert presentation.pptx --slide 10 --prism graph.pzfx --create-new
 
 # Update multiple slides
-python insert_prism.py presentation.pptx --slide 2 --prism graph1.pzfx --slide 3 --prism graph2.pzfx
+prism-insert presentation.pptx --slide 2 --prism graph1.pzfx --slide 3 --prism graph2.pzfx
 
 # Add to slides that already have embeddings
-python insert_prism.py presentation.pptx --slide 2 --prism additional_graph.pzfx --force-insert
+prism-insert presentation.pptx --slide 2 --prism additional_graph.pzfx --force-insert
 ```
 
 The insertion tool:
@@ -84,7 +102,7 @@ The insertion tool:
 
 1. **Extract PRISM objects from PowerPoint:**
    ```bash
-   python extract_prism.py presentation.pptx -o extracted_files
+   prism-extract presentation.pptx -o extracted_files
    ```
 
 2. **Edit the extracted .pzfx files in GraphPad PRISM**
@@ -92,11 +110,27 @@ The insertion tool:
 3. **Insert the updated files back into PowerPoint:**
    ```bash
    # Replace existing object
-   python insert_prism.py presentation.pptx --slide 2 --prism extracted_files/slide2_updated.pzfx
+   prism-insert presentation.pptx --slide 2 --prism extracted_files/slide2_updated.pzfx
    
    # Add to new slide
-   python insert_prism.py presentation.pptx --slide 10 --prism extracted_files/new_graph.pzfx --create-new
+   prism-insert presentation.pptx --slide 10 --prism extracted_files/new_graph.pzfx --create-new
    ```
+
+## Python API
+
+You can also use the package programmatically:
+
+```python
+from prism_ole_handler import PrismExtractor, PrismInserter
+
+# Extract PRISM objects from PowerPoint
+extractor = PrismExtractor("presentation.pptx")
+extractor.extract_prism_objects("output_folder", selected_slides=[2, 3])
+
+# Insert PRISM objects into PowerPoint
+inserter = PrismInserter("presentation.pptx")
+inserter.insert_prism_object(slide_num=2, prism_file_path="graph.pzfx")
+```
 
 ## Limitations
 
