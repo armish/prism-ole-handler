@@ -206,10 +206,6 @@ class PrismInserter:
     
     def create_ole_file(self, ole_path, prism_data):
         """Create a new OLE file with PRISM data"""
-        # This is a simplified OLE file creation
-        # In practice, you'd want to create a proper OLE compound document
-        # For now, we'll use a template approach
-        
         # Use an existing OLE file as a template if available
         embeddings_dir = ole_path.parent
         existing_ole_files = list(embeddings_dir.glob("oleObject*.bin"))
@@ -226,13 +222,43 @@ class PrismInserter:
             with open(ole_path, 'wb') as f:
                 f.write(updated_ole)
         else:
-            # Create a minimal OLE structure (this is a simplified approach)
-            # In a real implementation, you'd create a proper OLE compound document
+            # Try to use a template from the test files
+            test_template = Path(__file__).parent / "test" / "test_01.pptx"
+            if test_template.exists():
+                print(f"Using template from {test_template}")
+                # Extract a template OLE file from the test presentation
+                template_ole = self.extract_template_ole(test_template)
+                if template_ole:
+                    updated_ole = update_ole_file(template_ole, prism_data)
+                    with open(ole_path, 'wb') as f:
+                        f.write(updated_ole)
+                    return
+            
+            # Fallback: Create a minimal OLE structure
+            print("Warning: Creating minimal OLE structure - may not work properly")
             ole_header = b'\x04\x2c\x00\x00'  # Common header pattern
             ole_data = ole_header + prism_data
             
             with open(ole_path, 'wb') as f:
                 f.write(ole_data)
+    
+    def extract_template_ole(self, template_pptx):
+        """Extract an OLE file from a template PPTX for use as a template"""
+        try:
+            import tempfile
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with zipfile.ZipFile(template_pptx, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+                
+                embeddings_dir = Path(temp_dir) / "ppt" / "embeddings"
+                if embeddings_dir.exists():
+                    ole_files = list(embeddings_dir.glob("oleObject*.bin"))
+                    if ole_files:
+                        with open(ole_files[0], 'rb') as f:
+                            return f.read()
+        except Exception as e:
+            print(f"Could not extract template OLE: {e}")
+        return None
     
     def add_embedded_object_to_slide(self, slide_num, embedding_filename, object_id):
         """Add embedded object reference to slide XML"""
@@ -244,6 +270,8 @@ class PrismInserter:
         
         # Create relationships file if it doesn't exist
         if not rel_file.exists():
+            # Create the _rels directory if it doesn't exist
+            rel_file.parent.mkdir(parents=True, exist_ok=True)
             rels_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 </Relationships>"""
@@ -335,6 +363,12 @@ class PrismInserter:
         
         if not prism_path.exists():
             print(f"Error: PRISM file not found: {prism_path}")
+            return False
+        
+        # Check if the file is a .prism file (need to convert to .pzfx format)
+        if prism_path.suffix.lower() == '.prism':
+            print(f"Error: Cannot insert .prism files directly. Please use .pzfx files.")
+            print(f"Tip: Open {prism_path.name} in PRISM and save/export as .pzfx format")
             return False
         
         # Check if slide exists
@@ -445,7 +479,7 @@ Mapping file format (updates.json):
     parser.add_argument('--slide', '-s', type=int, action='append', 
                         help='Slide number to update')
     parser.add_argument('--prism', '-p', action='append',
-                        help='PRISM file to insert')
+                        help='PRISM file to insert (.pzfx format)')
     parser.add_argument('--mapping', '-m', 
                         help='JSON file with slide-to-prism mappings')
     parser.add_argument('--output', '-o',

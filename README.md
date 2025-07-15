@@ -103,3 +103,10 @@ The insertion tool:
 - OLE files have size constraints - very large PRISM files may not fit
 - Complex OLE structures may require manual investigation
 - Visual representation is preserved but may not reflect all changes
+- Only `.pzfx` format supported for insertion (not `.prism` files)
+
+## File Format Notes
+
+- **Extraction**: Creates `.pzfx` files that can be opened in PRISM
+- **Insertion**: Requires `.pzfx` files (not `.prism` files)
+- **Conversion**: Open `.prism` files in PRISM and save as `.pzfx` format
