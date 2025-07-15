@@ -16,10 +16,21 @@ pip install -r requirements.txt
 
 ### Extraction:
 ```bash
+# Extract from all slides
 python extract_prism.py presentation.pptx -o output_folder
+
+# Extract from specific slide
+python extract_prism.py presentation.pptx --slide 2 -o output_folder
+
+# Extract from multiple slides
+python extract_prism.py presentation.pptx --slide 2 --slide 3 --slide 5 -o output_folder
+
+# Extract from multiple slides (comma-separated)
+python extract_prism.py presentation.pptx --slides 2,3,5 -o output_folder
 ```
 
 This provides:
+- Selective extraction by slide number
 - Better OLE compound document parsing
 - Slide number tracking for each object
 - More detailed extraction information
@@ -43,14 +54,27 @@ Extracted files will be saved with descriptive names:
 To re-insert updated PRISM objects back into PowerPoint:
 
 ```bash
-# Update a single slide
+# Update an existing slide (replace existing embedding)
 python insert_prism.py presentation.pptx --slide 2 --prism updated_graph.pzfx
+
+# Insert into empty slide
+python insert_prism.py presentation.pptx --slide 3 --prism new_graph.pzfx
+
+# Create new slide with PRISM object
+python insert_prism.py presentation.pptx --slide 10 --prism graph.pzfx --create-new
 
 # Update multiple slides
 python insert_prism.py presentation.pptx --slide 2 --prism graph1.pzfx --slide 3 --prism graph2.pzfx
+
+# Add to slides that already have embeddings
+python insert_prism.py presentation.pptx --slide 2 --prism additional_graph.pzfx --force-insert
 ```
 
 The insertion tool:
+- **Replaces** existing embeddings by default
+- **Inserts** into empty slides automatically
+- **Creates new slides** with `--create-new` flag
+- **Adds multiple objects** to slides with `--force-insert`
 - Creates a backup of the original file
 - Updates the OLE containers with new PRISM data
 - Preserves the visual representation streams
@@ -67,7 +91,11 @@ The insertion tool:
 
 3. **Insert the updated files back into PowerPoint:**
    ```bash
+   # Replace existing object
    python insert_prism.py presentation.pptx --slide 2 --prism extracted_files/slide2_updated.pzfx
+   
+   # Add to new slide
+   python insert_prism.py presentation.pptx --slide 10 --prism extracted_files/new_graph.pzfx --create-new
    ```
 
 ## Limitations
