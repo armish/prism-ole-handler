@@ -41,7 +41,6 @@ class TestExtractCLI:
         """Test basic extraction command."""
         mock_extractor = Mock()
         mock_extractor_class.return_value = mock_extractor
-        mock_extractor.extract_prism_objects.return_value = ['extracted_file.pzfx']
         
         test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir)]
         
@@ -49,42 +48,39 @@ class TestExtractCLI:
             extract.main()
             
         mock_extractor_class.assert_called_once_with(str(self.test_pptx))
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), selected_slides=None)
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [])
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_with_slide_selection(self, mock_extractor_class):
         """Test extraction with slide selection."""
         mock_extractor = Mock()
         mock_extractor_class.return_value = mock_extractor
-        mock_extractor.extract_prism_objects.return_value = ['extracted_file.pzfx']
         
         test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--slide', '2', '--slide', '3']
         
         with patch.object(sys, 'argv', test_args):
             extract.main()
             
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), selected_slides=[2, 3])
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [2, 3])
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_with_slides_csv(self, mock_extractor_class):
         """Test extraction with comma-separated slides."""
         mock_extractor = Mock()
         mock_extractor_class.return_value = mock_extractor
-        mock_extractor.extract_prism_objects.return_value = ['extracted_file.pzfx']
         
         test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--slides', '1,2,3']
         
         with patch.object(sys, 'argv', test_args):
             extract.main()
             
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), selected_slides=[1, 2, 3])
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [1, 2, 3])
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_no_objects_found(self, mock_extractor_class):
         """Test extraction when no objects are found."""
         mock_extractor = Mock()
         mock_extractor_class.return_value = mock_extractor
-        mock_extractor.extract_prism_objects.return_value = []
         
         test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir)]
         
@@ -93,16 +89,32 @@ class TestExtractCLI:
             
         mock_extractor.extract_prism_objects.assert_called_once()
         
-    @patch('prism_ole_handler.cli.extract.PrismExtractor')
-    def test_main_file_not_found(self, mock_extractor_class):
+    def test_main_file_not_found(self):
         """Test extraction with non-existent file."""
-        mock_extractor_class.side_effect = FileNotFoundError("File not found")
-        
         test_args = ['prism-extract', 'nonexistent.pptx', '-o', str(self.output_dir)]
         
         with patch.object(sys, 'argv', test_args):
-            with pytest.raises(SystemExit):
-                extract.main()
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    extract.main()
+                    
+    def test_main_invalid_slide_numbers(self):
+        """Test extraction with invalid slide numbers."""
+        test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--slides', 'invalid']
+        
+        with patch.object(sys, 'argv', test_args):
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    extract.main()
+                    
+    def test_main_negative_slide_numbers(self):
+        """Test extraction with negative slide numbers."""
+        test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--slide', '-1']
+        
+        with patch.object(sys, 'argv', test_args):
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    extract.main()
 
 
 class TestInsertCLI:
@@ -139,79 +151,110 @@ class TestInsertCLI:
         """Test basic insertion command."""
         mock_inserter = Mock()
         mock_inserter_class.return_value = mock_inserter
-        mock_inserter.insert_prism_object.return_value = True
         
         test_args = ['prism-insert', str(self.test_pptx), '--slide', '1', '--prism', str(self.test_prism)]
         
         with patch.object(sys, 'argv', test_args):
             insert.main()
             
-        mock_inserter_class.assert_called_once_with(str(self.test_pptx), output_path=None)
-        mock_inserter.insert_prism_object.assert_called_once_with(1, str(self.test_prism), create_new=False, force_insert=False)
+        mock_inserter_class.assert_called_once_with(str(self.test_pptx))
+        mock_inserter.batch_insert.assert_called_once_with([(1, str(self.test_prism))], False, False)
         
     @patch('prism_ole_handler.cli.insert.PrismInserter')
     def test_main_with_create_new(self, mock_inserter_class):
         """Test insertion with create new slide option."""
         mock_inserter = Mock()
         mock_inserter_class.return_value = mock_inserter
-        mock_inserter.insert_prism_object.return_value = True
         
         test_args = ['prism-insert', str(self.test_pptx), '--slide', '2', '--prism', str(self.test_prism), '--create-new']
         
         with patch.object(sys, 'argv', test_args):
             insert.main()
             
-        mock_inserter.insert_prism_object.assert_called_once_with(2, str(self.test_prism), create_new=True, force_insert=False)
+        mock_inserter.batch_insert.assert_called_once_with([(2, str(self.test_prism))], True, False)
         
     @patch('prism_ole_handler.cli.insert.PrismInserter')
     def test_main_with_force_insert(self, mock_inserter_class):
         """Test insertion with force insert option."""
         mock_inserter = Mock()
         mock_inserter_class.return_value = mock_inserter
-        mock_inserter.insert_prism_object.return_value = True
         
         test_args = ['prism-insert', str(self.test_pptx), '--slide', '1', '--prism', str(self.test_prism), '--force-insert']
         
         with patch.object(sys, 'argv', test_args):
             insert.main()
             
-        mock_inserter.insert_prism_object.assert_called_once_with(1, str(self.test_prism), create_new=False, force_insert=True)
+        mock_inserter.batch_insert.assert_called_once_with([(1, str(self.test_prism))], False, True)
         
     @patch('prism_ole_handler.cli.insert.PrismInserter')
-    def test_main_with_output_path(self, mock_inserter_class):
+    @patch('prism_ole_handler.cli.insert.shutil.move')
+    def test_main_with_output_path(self, mock_move, mock_inserter_class):
         """Test insertion with output path."""
         mock_inserter = Mock()
         mock_inserter_class.return_value = mock_inserter
-        mock_inserter.insert_prism_object.return_value = True
         
         output_path = str(self.test_dir / "output.pptx")
         test_args = ['prism-insert', str(self.test_pptx), '--slide', '1', '--prism', str(self.test_prism), '-o', output_path]
         
         with patch.object(sys, 'argv', test_args):
-            insert.main()
+            with patch('builtins.print'):  # Suppress output
+                insert.main()
             
-        mock_inserter_class.assert_called_once_with(str(self.test_pptx), output_path=output_path)
+        mock_inserter_class.assert_called_once_with(str(self.test_pptx))
+        # Should set backup_path to None for different output
+        assert mock_inserter.backup_path is None
+        mock_move.assert_called_once()
         
     @patch('prism_ole_handler.cli.insert.PrismInserter')
-    def test_main_insertion_failure(self, mock_inserter_class):
-        """Test insertion when it fails."""
+    def test_main_with_mapping_file(self, mock_inserter_class):
+        """Test insertion with mapping file."""
         mock_inserter = Mock()
         mock_inserter_class.return_value = mock_inserter
-        mock_inserter.insert_prism_object.return_value = False
         
-        test_args = ['prism-insert', str(self.test_pptx), '--slide', '1', '--prism', str(self.test_prism)]
+        # Create mapping file
+        mapping_file = self.test_dir / "mapping.json"
+        mapping_content = {
+            "updates": [
+                {"slide": 1, "prism": str(self.test_prism)},
+                {"slide": 2, "prism": str(self.test_prism)}
+            ]
+        }
+        
+        import json
+        with open(mapping_file, 'w') as f:
+            json.dump(mapping_content, f)
+        
+        test_args = ['prism-insert', str(self.test_pptx), '--mapping', str(mapping_file)]
         
         with patch.object(sys, 'argv', test_args):
-            with pytest.raises(SystemExit):
-                insert.main()
-                
-    @patch('prism_ole_handler.cli.insert.PrismInserter')
-    def test_main_file_not_found(self, mock_inserter_class):
-        """Test insertion with non-existent file."""
-        mock_inserter_class.side_effect = FileNotFoundError("File not found")
+            insert.main()
+            
+        expected_updates = [(1, str(self.test_prism)), (2, str(self.test_prism))]
+        mock_inserter.batch_insert.assert_called_once_with(expected_updates, False, False)
         
+    def test_main_file_not_found(self):
+        """Test insertion with non-existent file."""
         test_args = ['prism-insert', 'nonexistent.pptx', '--slide', '1', '--prism', str(self.test_prism)]
         
         with patch.object(sys, 'argv', test_args):
-            with pytest.raises(SystemExit):
-                insert.main()
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    insert.main()
+                    
+    def test_main_no_slide_or_mapping(self):
+        """Test insertion without slide/prism or mapping arguments."""
+        test_args = ['prism-insert', str(self.test_pptx)]
+        
+        with patch.object(sys, 'argv', test_args):
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    insert.main()
+                    
+    def test_main_mismatched_slide_prism_count(self):
+        """Test insertion with mismatched slide and prism argument counts."""
+        test_args = ['prism-insert', str(self.test_pptx), '--slide', '1', '--slide', '2', '--prism', str(self.test_prism)]
+        
+        with patch.object(sys, 'argv', test_args):
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    insert.main()

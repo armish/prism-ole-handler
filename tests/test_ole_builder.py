@@ -33,20 +33,15 @@ class TestOLEBuilder:
         assert builder.original_ole == mock_ole_io.return_value
         
     @patch('prism_ole_handler.utils.ole_builder.olefile.OleFileIO')
-    def test_build_updated_ole_returns_bytes(self, mock_ole_io):
-        """Test that build_updated_ole returns bytes."""
+    def test_close_method(self, mock_ole_io):
+        """Test the close method."""
         mock_ole = Mock()
         mock_ole_io.return_value = mock_ole
-        mock_ole.listdir.return_value = [['CONTENTS']]
-        mock_ole.openstream.return_value.read.return_value = b'\x04\x2c\x00\x00PK' + b'original_data'
-        mock_ole.fp.seek.return_value = None
-        mock_ole.fp.read.return_value = self.test_ole_data
         
         builder = OLEBuilder(self.test_ole_data)
-        result = builder.build_updated_ole(self.test_prism_data)
+        builder.close()
         
-        assert isinstance(result, bytes)
-        assert len(result) > 0
+        mock_ole.close.assert_called_once()
         
     @patch('prism_ole_handler.utils.ole_builder.olefile.OleFileIO')
     def test_build_updated_ole_with_contents_stream(self, mock_ole_io):
@@ -70,8 +65,10 @@ class TestOLEBuilder:
                 return mock_other_stream
                 
         mock_ole.openstream.side_effect = mock_openstream
+        
+        # Mock the file pointer operations
         mock_ole.fp.seek.return_value = None
-        mock_ole.fp.read.return_value = self.test_ole_data
+        mock_ole.fp.read.return_value = b'\x04\x2c\x00\x00PK' + b'original_prism_data' + b'\x00' * 400
         
         builder = OLEBuilder(self.test_ole_data)
         result = builder.build_updated_ole(self.test_prism_data)
@@ -86,8 +83,23 @@ class TestOLEBuilder:
         mock_ole_io.return_value = mock_ole
         mock_ole.listdir.return_value = [['OTHER_STREAM']]
         mock_ole.openstream.return_value.read.return_value = b'other_data'
+        
+        # Mock the file pointer operations for build_ole_compound_file
         mock_ole.fp.seek.return_value = None
-        mock_ole.fp.read.return_value = self.test_ole_data
+        mock_ole.fp.read.return_value = b'\x04\x2c\x00\x00PK' + b'dummy_data' + b'\x00' * 400
+        
+        # Mock openstream to return CONTENTS stream data when called
+        def mock_openstream_side_effect(stream_path):
+            if stream_path == ['CONTENTS']:
+                mock_stream = Mock()
+                mock_stream.read.return_value = b'\x04\x2c\x00\x00PK' + b'dummy_data'
+                return mock_stream
+            else:
+                mock_stream = Mock()
+                mock_stream.read.return_value = b'other_data'
+                return mock_stream
+                
+        mock_ole.openstream.side_effect = mock_openstream_side_effect
         
         builder = OLEBuilder(self.test_ole_data)
         result = builder.build_updated_ole(self.test_prism_data)
@@ -96,29 +108,35 @@ class TestOLEBuilder:
         assert len(result) > 0
         
     @patch('prism_ole_handler.utils.ole_builder.olefile.OleFileIO')
-    def test_close_method(self, mock_ole_io):
-        """Test the close method."""
-        mock_ole = Mock()
-        mock_ole_io.return_value = mock_ole
-        
-        builder = OLEBuilder(self.test_ole_data)
-        builder.close()
-        
-        mock_ole.close.assert_called_once()
-        
-    @patch('prism_ole_handler.utils.ole_builder.olefile.OleFileIO')
     def test_build_ole_compound_file_error_handling(self, mock_ole_io):
         """Test error handling in build_ole_compound_file."""
         mock_ole = Mock()
         mock_ole_io.return_value = mock_ole
         mock_ole.listdir.return_value = [['CONTENTS']]
-        mock_ole.openstream.return_value.read.return_value = b'no_pk_header'
+        
+        # Mock openstream to return data without PK header
+        mock_stream = Mock()
+        mock_stream.read.return_value = b'no_pk_header'
+        mock_ole.openstream.return_value = mock_stream
+        
         mock_ole.fp.seek.return_value = None
-        mock_ole.fp.read.return_value = self.test_ole_data
+        mock_ole.fp.read.return_value = b'no_pk_header' + b'\x00' * 400
         
         builder = OLEBuilder(self.test_ole_data)
         
         with pytest.raises(ValueError, match="Could not find CONTENTS stream"):
+            builder.build_updated_ole(self.test_prism_data)
+            
+    @patch('prism_ole_handler.utils.ole_builder.olefile.OleFileIO')
+    def test_build_updated_ole_exception_handling(self, mock_ole_io):
+        """Test exception handling in build_updated_ole."""
+        mock_ole = Mock()
+        mock_ole_io.return_value = mock_ole
+        mock_ole.listdir.side_effect = Exception("Test error")
+        
+        builder = OLEBuilder(self.test_ole_data)
+        
+        with pytest.raises(Exception, match="Test error"):
             builder.build_updated_ole(self.test_prism_data)
 
 
@@ -167,3 +185,24 @@ class TestUpdateOleFile:
         
         mock_builder.build_updated_ole.assert_called_once_with(b'')
         assert result == b'updated_ole_data'
+        
+    @patch('prism_ole_handler.utils.ole_builder.OLEBuilder')
+    def test_update_ole_file_with_large_data(self, mock_ole_builder_class):
+        """Test update_ole_file with large PRISM data."""
+        mock_builder = Mock()
+        mock_ole_builder_class.return_value = mock_builder
+        mock_builder.build_updated_ole.return_value = b'updated_ole_data'
+        
+        large_data = b'x' * 10000  # 10KB of data
+        result = update_ole_file(self.test_ole_data, large_data)
+        
+        mock_builder.build_updated_ole.assert_called_once_with(large_data)
+        assert result == b'updated_ole_data'
+        
+    @patch('prism_ole_handler.utils.ole_builder.OLEBuilder')
+    def test_update_ole_file_builder_initialization_error(self, mock_ole_builder_class):
+        """Test update_ole_file when builder initialization fails."""
+        mock_ole_builder_class.side_effect = Exception("Initialization error")
+        
+        with pytest.raises(Exception, match="Initialization error"):
+            update_ole_file(self.test_ole_data, self.test_prism_data)
