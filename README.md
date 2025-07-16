@@ -47,6 +47,10 @@ prism-extract presentation.pptx --slide 2 --slide 3 --slide 5 -o output_folder
 
 # Extract from multiple slides (comma-separated)
 prism-extract presentation.pptx --slides 2,3,5 -o output_folder
+
+# Customize filename padding (default is 3 digits)
+prism-extract presentation.pptx -o output_folder --padding 2  # slide06_object04_prism.pzfx
+prism-extract presentation.pptx -o output_folder --padding 1  # slide6_object4_prism.pzfx
 ```
 
 This provides:
@@ -58,9 +62,10 @@ This provides:
 ## Output
 
 Extracted files will be saved with descriptive names:
-- `slide1_object1.pzfx` - PRISM file from slide 1
-- `slide2_object1.ole` - Unprocessed OLE file for investigation
-- `object1_stream_Package.bin` - Extracted OLE stream
+- `slide001_object001.pzfx` - PRISM file from slide 1 (default 3-digit padding)
+- `slide02_object01.pzfx` - With 2-digit padding (`--padding 2`)
+- `slide2_object1.pzfx` - With 1-digit padding (`--padding 1`)
+- `object001_stream_Package.bin` - Extracted OLE stream for investigation
 
 ## How it works
 
@@ -128,6 +133,9 @@ from prism_ole_handler import PrismExtractor, PrismInserter
 # Extract PRISM objects from PowerPoint
 extractor = PrismExtractor("presentation.pptx")
 extractor.extract_prism_objects("output_folder", selected_slides=[2, 3])
+
+# Customize filename padding
+extractor.extract_prism_objects("output_folder", padding=2)  # slide06_object04_prism.pzfx
 
 # Insert PRISM objects into PowerPoint
 inserter = PrismInserter("presentation.pptx")

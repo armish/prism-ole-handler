@@ -48,7 +48,7 @@ class TestExtractCLI:
             extract.main()
             
         mock_extractor_class.assert_called_once_with(str(self.test_pptx))
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [])
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [], padding=3)
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_with_slide_selection(self, mock_extractor_class):
@@ -61,7 +61,7 @@ class TestExtractCLI:
         with patch.object(sys, 'argv', test_args):
             extract.main()
             
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [2, 3])
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [2, 3], padding=3)
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_with_slides_csv(self, mock_extractor_class):
@@ -74,7 +74,7 @@ class TestExtractCLI:
         with patch.object(sys, 'argv', test_args):
             extract.main()
             
-        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [1, 2, 3])
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [1, 2, 3], padding=3)
         
     @patch('prism_ole_handler.cli.extract.PrismExtractor')
     def test_main_no_objects_found(self, mock_extractor_class):
@@ -87,7 +87,7 @@ class TestExtractCLI:
         with patch.object(sys, 'argv', test_args):
             extract.main()
             
-        mock_extractor.extract_prism_objects.assert_called_once()
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [], padding=3)
         
     def test_main_file_not_found(self):
         """Test extraction with non-existent file."""
@@ -110,6 +110,28 @@ class TestExtractCLI:
     def test_main_negative_slide_numbers(self):
         """Test extraction with negative slide numbers."""
         test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--slide', '-1']
+        
+        with patch.object(sys, 'argv', test_args):
+            with patch('builtins.print'):  # Suppress error output
+                with pytest.raises(SystemExit):
+                    extract.main()
+    
+    @patch('prism_ole_handler.cli.extract.PrismExtractor')
+    def test_main_with_custom_padding(self, mock_extractor_class):
+        """Test extraction with custom padding."""
+        mock_extractor = Mock()
+        mock_extractor_class.return_value = mock_extractor
+        
+        test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--padding', '2']
+        
+        with patch.object(sys, 'argv', test_args):
+            extract.main()
+            
+        mock_extractor.extract_prism_objects.assert_called_once_with(str(self.output_dir), [], padding=2)
+
+    def test_main_invalid_padding(self):
+        """Test extraction with invalid padding value."""
+        test_args = ['prism-extract', str(self.test_pptx), '-o', str(self.output_dir), '--padding', '0']
         
         with patch.object(sys, 'argv', test_args):
             with patch('builtins.print'):  # Suppress error output

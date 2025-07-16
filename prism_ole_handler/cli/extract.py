@@ -56,6 +56,13 @@ The tool will extract PRISM objects from the specified slides, or all slides if 
         type=str,
         help='Comma-separated list of slide numbers to extract (e.g., "2,3,5")',
     )
+    parser.add_argument(
+        "--padding",
+        "-p",
+        type=int,
+        default=3,
+        help="Number of digits for zero-padding in filenames (default: 3, e.g., slide001_object001)",
+    )
 
     args = parser.parse_args()
 
@@ -84,8 +91,13 @@ The tool will extract PRISM objects from the specified slides, or all slides if 
             print("Error: Slide numbers must be positive integers")
             sys.exit(1)
 
+    # Validate padding argument
+    if args.padding < 1:
+        print("Error: Padding must be at least 1 digit")
+        sys.exit(1)
+
     extractor = PrismExtractor(args.pptx_file)
-    extractor.extract_prism_objects(args.output, selected_slides)
+    extractor.extract_prism_objects(args.output, selected_slides, padding=args.padding)
 
 
 if __name__ == "__main__":

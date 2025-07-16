@@ -125,9 +125,14 @@ class PrismExtractor:
 
                         # Check if it's PRISM data
                         if self.is_prism_data(stream_data):
-                            # Skip the first 4 bytes which appear to be a length header
-                            if stream_data[:2] == b"\x04\x30":
-                                stream_data = stream_data[4:]
+                            # Check if ZIP signature starts at offset 4 (after 4-byte size header)
+                            if len(stream_data) >= 6 and stream_data[4:6] == b"PK":
+                                # First 4 bytes are a little-endian size indicator
+                                import struct
+                                size_header = stream_data[:4]
+                                indicated_size = struct.unpack('<I', size_header)[0]
+                                # Extract exactly the indicated number of bytes after the header
+                                stream_data = stream_data[4:4+indicated_size]
                             extracted.append((f"{base_name}_prism.pzfx", stream_data))
                         else:
                             # Save for investigation
@@ -145,8 +150,14 @@ class PrismExtractor:
 
         return extracted
 
-    def extract_prism_objects(self, output_dir, selected_slides=None):
-        """Extract PRISM objects from PPTX file"""
+    def extract_prism_objects(self, output_dir, selected_slides=None, padding=3):
+        """Extract PRISM objects from PPTX file
+        
+        Args:
+            output_dir: Directory to save extracted files
+            selected_slides: List of slide numbers to extract from (None for all slides)
+            padding: Number of digits for zero-padding in filenames (default: 3)
+        """
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
 
@@ -187,11 +198,11 @@ class PrismExtractor:
             obj_path = obj_info["path"]
             slide_num = obj_info["slide"]
 
-            # Create descriptive name
+            # Create descriptive name with zero-padded numbering
             if slide_num:
-                base_name = f"slide{slide_num}_object{idx + 1}"
+                base_name = f"slide{slide_num:0{padding}d}_object{idx + 1:0{padding}d}"
             else:
-                base_name = f"object{idx + 1}"
+                base_name = f"object{idx + 1:0{padding}d}"
 
             print(f"\nProcessing: {obj_path.name} ({base_name})")
 
