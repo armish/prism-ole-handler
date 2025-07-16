@@ -129,10 +129,11 @@ class PrismExtractor:
                             if len(stream_data) >= 6 and stream_data[4:6] == b"PK":
                                 # First 4 bytes are a little-endian size indicator
                                 import struct
+
                                 size_header = stream_data[:4]
-                                indicated_size = struct.unpack('<I', size_header)[0]
+                                indicated_size = struct.unpack("<I", size_header)[0]
                                 # Extract exactly the indicated number of bytes after the header
-                                stream_data = stream_data[4:4+indicated_size]
+                                stream_data = stream_data[4 : 4 + indicated_size]
                             extracted.append((f"{base_name}_prism.pzfx", stream_data))
                         else:
                             # Save for investigation
@@ -152,7 +153,7 @@ class PrismExtractor:
 
     def extract_prism_objects(self, output_dir, selected_slides=None, padding=3):
         """Extract PRISM objects from PPTX file
-        
+
         Args:
             output_dir: Directory to save extracted files
             selected_slides: List of slide numbers to extract from (None for all slides)
