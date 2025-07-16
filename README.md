@@ -30,6 +30,9 @@ pip install -e .
 ### Development installation
 ```bash
 pip install -e ".[dev]"
+
+# Install Git hooks for code quality checks
+./scripts/install-hooks.sh
 ```
 
 ## Usage
@@ -154,3 +157,60 @@ inserter.insert_prism_object(slide_num=2, prism_file_path="graph.pzfx")
 - **Extraction**: Creates `.pzfx` files that can be opened in PRISM
 - **Insertion**: Requires `.pzfx` files (not `.prism` files)
 - **Conversion**: Open `.prism` files in PRISM and save as `.pzfx` format
+
+## Development
+
+### Setting up for development
+
+1. Clone the repository and install in editable mode:
+```bash
+git clone https://github.com/armish/prism-ole-handler.git
+cd prism-ole-handler
+pip install -e ".[dev]"
+```
+
+2. Install Git hooks for code quality checks:
+```bash
+./scripts/install-hooks.sh
+```
+
+### Code Quality
+
+The project uses several tools to maintain code quality:
+
+- **Black**: Code formatting
+- **pytest**: Unit testing
+- **Git hooks**: Automatic pre-push checks
+
+Before pushing changes, the pre-push hook will automatically:
+- Check code formatting with Black
+- Run all unit tests  
+- Verify package imports
+
+### Running tests locally
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Check code formatting
+black --check prism_ole_handler/ tests/
+
+# Auto-fix formatting
+black prism_ole_handler/ tests/
+```
+
+### Manual quality checks
+
+If you prefer to run checks manually before committing:
+
+```bash
+# Format code
+black prism_ole_handler/ tests/
+
+# Run tests
+python -m pytest tests/ -v
+
+# Verify everything is ready
+black --check prism_ole_handler/ tests/
+```
